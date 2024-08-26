@@ -1,34 +1,39 @@
 import { RepoDetails, StatsData } from "@/types/repo-stats";
+import { analyzeGitRepo } from "@/services/git-analyser-service";
 
-export async function fetchRepoData(repoUrl: string): Promise<RepoDetails> {
-  console.log("In fetchRepoData", repoUrl);
-  const response = await fetch(
-    `/api/github-repo?url=${encodeURIComponent(repoUrl)}`,
-    { cache: "no-store" }
-  );
+export async function fetchRepoDataAndStats(
+  repoUrl: string
+): Promise<{ repoDetails: RepoDetails; statsData: StatsData }> {
+  // Fetch repository data
+  const parsedUrl = new URL(repoUrl);
+  const [, owner, repo] = parsedUrl.pathname.split("/");
+
+  if (!owner || !repo) {
+    throw new Error("Invalid GitHub repository URL");
+  }
+
+  const apiUrl = `https://api.github.com/repos/${owner}/${repo}`;
+  const response = await fetch(apiUrl);
 
   if (!response.ok) {
-    throw new Error("Failed to fetch repository data");
+    throw new Error(
+      `GitHub API responded with ${response.status}: ${response.statusText}`
+    );
   }
+
   const data = await response.json();
-  return {
+
+  const repoDetails: RepoDetails = {
     name: data.name,
     url: repoUrl,
     description: data.description,
-    stars: data.stars,
-    forks: data.forks,
-    openIssues: data.openIssues,
+    stars: data.stargazers_count,
+    forks: data.forks_count,
+    openIssues: data.open_issues_count,
   };
-}
 
-export async function fetchStatsData(repoUrl: string): Promise<StatsData> {
-  const response = await fetch(
-    `/api/repo-stats?url=${encodeURIComponent(repoUrl)}`,
-    { cache: "no-store" }
-  );
-  if (!response.ok) {
-    throw new Error("Failed to fetch repository stats");
-  }
-  const data = await response.json();
-  return data.data;
+  // Fetch stats data
+  const statsData: StatsData = await analyzeGitRepo(repoUrl);
+
+  return { repoDetails, statsData };
 }
