@@ -1,26 +1,11 @@
-import { exec, execSync } from "child_process";
-import simpleGit from "simple-git";
-import { promisify } from "util";
+import { execSync } from "child_process";
 import fs from "fs";
 import path from "path";
-
-const readFile = promisify(fs.readFile);
-const readdir = promisify(fs.readdir);
+import simpleGit from "simple-git";
 
 async function cloneRepo(url: string, targetPath: string): Promise<void> {
   const git = simpleGit();
   await git.clone(url, targetPath);
-}
-
-async function getFilesRecursively(dir: string): Promise<string[]> {
-  const dirents = await readdir(dir, { withFileTypes: true });
-  const files = await Promise.all(
-    dirents.map((dirent) => {
-      const res = path.resolve(dir, dirent.name);
-      return dirent.isDirectory() ? getFilesRecursively(res) : res;
-    })
-  );
-  return Array.prototype.concat(...files);
 }
 
 async function getClocResult(dir: string): Promise<any> {
