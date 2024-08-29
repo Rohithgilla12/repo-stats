@@ -119,15 +119,9 @@ export default function GithubRepoStats({ repoDetails, statsData }: Props) {
                 </div>
               ))}
             </div>
-            <Card className="mt-6">
-              <CardHeader className="pb-2">
-                <CardTitle>Programming Language Statistics</CardTitle>
-                <CardDescription>Lines of Code Distribution</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <CodeStatsGraph codeStats={statsData} />
-              </CardContent>
-            </Card>
+            <div className="mt-6">
+              <CodeStatsGraph codeStats={statsData} />
+            </div>
           </div>
         </div>
       </CardContent>
