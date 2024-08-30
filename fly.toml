@@ -1,10 +1,10 @@
-# fly.toml app configuration file generated for repo-stats-app on 2024-08-23T19:43:46+05:30
+# fly.toml app configuration file generated for repo-stats on 2024-08-29T21:24:00+05:30
 #
 # See https://fly.io/docs/reference/configuration/ for information about how to use this file.
 #
 
-app = 'repo-stats-app'
-primary_region = 'iad'
+app = 'repo-stats'
+primary_region = 'atl'
 
 [build]
 
