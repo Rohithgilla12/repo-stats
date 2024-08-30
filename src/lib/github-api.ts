@@ -2,7 +2,7 @@ import { RepoDetails, StatsData } from "@/types/repo-stats";
 import { analyzeGitRepo } from "@/services/git-analyser-service";
 import { db } from "@/db/db";
 import { languageStats, repositories } from "@/db/schema";
-import { eq } from "drizzle-orm";
+import { count, eq } from "drizzle-orm";
 
 export async function fetchRepoDataAndStats(
   repoUrl: string
@@ -139,3 +139,8 @@ export async function fetchRepoDataAndStats(
 
   return { repoDetails, statsData: stats };
 }
+
+export const countRepositories = async () => {
+  const repos = await db.select({ count: count() }).from(repositories);
+  return repos;
+};

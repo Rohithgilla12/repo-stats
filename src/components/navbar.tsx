@@ -6,6 +6,8 @@ import darkLogo from "../../public/icon_dark_mode.svg";
 import lightLogo from "../../public/icon_light_mode.svg";
 import Image from "next/image";
 import { useTheme } from "next-themes";
+import { Button } from "./ui/button";
+import { Star } from "lucide-react";
 
 export function Navbar() {
   const { theme } = useTheme();
@@ -25,6 +27,16 @@ export function Navbar() {
           </div>
         </Link>
         <div className="ml-auto flex items-center space-x-4">
+          <Button variant="outline" size="sm" asChild>
+            <Link
+              href="https://github.com/Rohithgilla12/repo-stats"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Star className="mr-2 h-4 w-4" />
+              Star me
+            </Link>
+          </Button>
           <ModeToggle />
         </div>
       </div>
