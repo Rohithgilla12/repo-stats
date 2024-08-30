@@ -105,8 +105,6 @@ export default function Home() {
           ))}
         </div>
       </div>
-
-      <RepoCounter />
     </div>
   );
 }
