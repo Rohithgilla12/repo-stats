@@ -1,5 +1,8 @@
 import { RepoDetails, StatsData } from "@/types/repo-stats";
 import { analyzeGitRepo } from "@/services/git-analyser-service";
+import { db } from "@/db/db";
+import { languageStats, repositories } from "@/db/schema";
+import { eq } from "drizzle-orm";
 
 export async function fetchRepoDataAndStats(
   repoUrl: string
@@ -32,8 +35,76 @@ export async function fetchRepoDataAndStats(
     openIssues: data.open_issues_count,
   };
 
-  // Fetch stats data
-  const statsData: StatsData = await analyzeGitRepo(repoUrl);
+  // Check if the stats data is existing in database
+  const existingStats = await db
+    .select({
+      id: repositories.id,
+      name: repositories.name,
+      nFiles: repositories.nFiles,
+      nLines: repositories.nLines,
+      sumBlank: repositories.sumBlank,
+      sumComment: repositories.sumComment,
+      sumCode: repositories.sumCode,
+      createdAt: repositories.createdAt,
+      updatedAt: repositories.updatedAt,
+      languages: {
+        language: languageStats.language,
+        nFiles: languageStats.nFiles,
+        blank: languageStats.blank,
+        comment: languageStats.comment,
+        code: languageStats.code,
+      },
+    })
+    .from(repositories)
+    .leftJoin(languageStats, eq(repositories.id, languageStats.repoId));
 
-  return { repoDetails, statsData };
+  if (existingStats.length > 0) {
+    console.log(existingStats);
+    const stat = existingStats[0];
+    return {
+      repoDetails,
+      statsData: {
+        header: {
+          n_files: stat.nFiles,
+          n_lines: stat.nLines,
+        },
+        SUM: {
+          blank: stat.sumBlank,
+          comment: stat.sumComment,
+          code: stat.sumCode,
+          nFiles: stat.nFiles,
+        },
+      },
+    };
+  } else {
+    // Fetch stats data
+    const stats: StatsData = await analyzeGitRepo(repoUrl);
+
+    // Insert stats data into database
+    const result = await db
+      .insert(repositories)
+      .values({
+        name: repoUrl,
+        nFiles: stats.header.n_files,
+        nLines: stats.header.n_lines,
+        sumBlank: stats.SUM.blank,
+        sumComment: stats.SUM.comment,
+        sumCode: stats.SUM.code,
+      })
+      .returning({ insertedId: repositories.id });
+
+    const repoId = result[0].insertedId;
+
+    for (const [language, stat] of Object.entries(stats)) {
+      if (language !== "SUM" && language !== "header") {
+        await db.insert(languageStats).values({
+          repoId,
+          language,
+          ...stat,
+        });
+      }
+    }
+
+    return { repoDetails, statsData: stats };
+  }
 }
