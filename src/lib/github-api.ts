@@ -58,9 +58,21 @@ export async function fetchRepoDataAndStats(
     .from(repositories)
     .leftJoin(languageStats, eq(repositories.id, languageStats.repoId));
 
+  const languages = existingStats.reduce((acc, stat) => {
+    if (stat.languages?.language) {
+      acc[stat.languages.language] = {
+        nFiles: stat.languages.nFiles ?? 0,
+        blank: stat.languages?.blank ?? 0,
+        comment: stat.languages?.comment ?? 0,
+        code: stat.languages?.code ?? 0,
+      };
+    }
+    return acc;
+  }, {} as Record<string, { nFiles: number; blank: number; comment: number; code: number }>);
+
   if (existingStats.length > 0) {
-    console.log(existingStats);
     const stat = existingStats[0];
+
     return {
       repoDetails,
       statsData: {
@@ -74,6 +86,7 @@ export async function fetchRepoDataAndStats(
           code: stat.sumCode,
           nFiles: stat.nFiles,
         },
+        ...languages,
       },
     };
   } else {

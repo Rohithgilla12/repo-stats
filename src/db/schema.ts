@@ -1,3 +1,4 @@
+import { sql } from "drizzle-orm";
 import { integer, sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const repositories = sqliteTable("repositories", {
@@ -10,10 +11,10 @@ export const repositories = sqliteTable("repositories", {
   sumCode: integer("sum_code").notNull(),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
-    .default(new Date()),
+    .default(sql`(cast(unixepoch() as int))`),
   updatedAt: integer("updated_at", { mode: "timestamp" })
     .notNull()
-    .default(new Date()),
+    .default(sql`(cast(unixepoch() as int))`),
 });
 
 export const languageStats = sqliteTable("language_stats_v2", {
@@ -28,8 +29,8 @@ export const languageStats = sqliteTable("language_stats_v2", {
   code: integer("code").notNull(),
   createdAt: integer("created_at", { mode: "timestamp" })
     .notNull()
-    .default(new Date()),
+    .default(sql`(cast(unixepoch() as int))`),
   updatedAt: integer("updated_at", { mode: "timestamp" })
     .notNull()
-    .default(new Date()),
+    .default(sql`(cast(unixepoch() as int))`),
 });

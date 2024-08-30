@@ -26,6 +26,7 @@ export default async function StatsPage({
 async function StatsContent({ repoUrl }: { repoUrl: string }) {
   try {
     const { repoDetails, statsData } = await fetchRepoDataAndStats(repoUrl);
+    console.log(statsData);
 
     return <GithubRepoStats repoDetails={repoDetails} statsData={statsData} />;
   } catch (error) {
