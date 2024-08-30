@@ -56,7 +56,8 @@ export async function fetchRepoDataAndStats(
       },
     })
     .from(repositories)
-    .leftJoin(languageStats, eq(repositories.id, languageStats.repoId));
+    .leftJoin(languageStats, eq(repositories.id, languageStats.repoId))
+    .where(eq(repositories.name, repoUrl));
 
   const languages = existingStats.reduce((acc, stat) => {
     if (stat.languages?.language) {
@@ -72,52 +73,69 @@ export async function fetchRepoDataAndStats(
 
   if (existingStats.length > 0) {
     const stat = existingStats[0];
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
 
-    return {
-      repoDetails,
-      statsData: {
-        header: {
-          n_files: stat.nFiles,
-          n_lines: stat.nLines,
+    if (stat.updatedAt && stat.updatedAt > oneDayAgo) {
+      return {
+        repoDetails,
+        statsData: {
+          header: {
+            n_files: stat.nFiles,
+            n_lines: stat.nLines,
+          },
+          SUM: {
+            blank: stat.sumBlank,
+            comment: stat.sumComment,
+            code: stat.sumCode,
+            nFiles: stat.nFiles,
+          },
+          ...languages,
         },
-        SUM: {
-          blank: stat.sumBlank,
-          comment: stat.sumComment,
-          code: stat.sumCode,
-          nFiles: stat.nFiles,
-        },
-        ...languages,
-      },
-    };
-  } else {
-    // Fetch stats data
-    const stats: StatsData = await analyzeGitRepo(repoUrl);
+      };
+    }
+  }
 
-    // Insert stats data into database
-    const result = await db
-      .insert(repositories)
-      .values({
-        name: repoUrl,
+  // Fetch new stats data
+  const stats: StatsData = await analyzeGitRepo(repoUrl);
+
+  // Update or insert stats data into database
+  const result = await db
+    .insert(repositories)
+    .values({
+      name: repoUrl,
+      nFiles: stats.header.n_files,
+      nLines: stats.header.n_lines,
+      sumBlank: stats.SUM.blank,
+      sumComment: stats.SUM.comment,
+      sumCode: stats.SUM.code,
+    })
+    .onConflictDoUpdate({
+      target: repositories.name,
+      set: {
         nFiles: stats.header.n_files,
         nLines: stats.header.n_lines,
         sumBlank: stats.SUM.blank,
         sumComment: stats.SUM.comment,
         sumCode: stats.SUM.code,
-      })
-      .returning({ insertedId: repositories.id });
+        updatedAt: new Date(),
+      },
+    })
+    .returning({ insertedId: repositories.id });
 
-    const repoId = result[0].insertedId;
+  const repoId = result[0].insertedId;
 
-    for (const [language, stat] of Object.entries(stats)) {
-      if (language !== "SUM" && language !== "header") {
-        await db.insert(languageStats).values({
-          repoId,
-          language,
-          ...stat,
-        });
-      }
+  // Delete existing language stats and insert new ones
+  await db.delete(languageStats).where(eq(languageStats.repoId, repoId));
+
+  for (const [language, stat] of Object.entries(stats)) {
+    if (language !== "SUM" && language !== "header") {
+      await db.insert(languageStats).values({
+        repoId,
+        language,
+        ...stat,
+      });
     }
-
-    return { repoDetails, statsData: stats };
   }
+
+  return { repoDetails, statsData: stats };
 }

@@ -1,3 +1,4 @@
+/* eslint-disable @next/next/no-img-element */
 import {
   Card,
   CardContent,
@@ -5,41 +6,29 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-
 import { RepoDetails, StatsData } from "@/types/repo-stats";
 import { BookOpen, GitForkIcon, StarIcon } from "lucide-react";
 import { CodeStatsGraph } from "./code-stats-graph";
-
-// Assuming these types are the same as before
+import { LanguageDetailsTable } from "./language-details-table";
 
 type Props = {
   repoDetails: RepoDetails;
   statsData: StatsData;
 };
 
+function splitGitHubUrl(url: string) {
+  const match = url.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+  if (match) {
+    const owner = match[1];
+    const repo = match[2];
+    return { owner, repo };
+  } else {
+    return { owner: "", repo: "" };
+  }
+}
+
 export default function GithubRepoStats({ repoDetails, statsData }: Props) {
-  const languages = Object.keys(statsData).filter(
-    (key) => key !== "header" && key !== "SUM"
-  );
-  const totalCode = statsData.SUM.code;
-
-  const getLanguagePercentage = (language: string) => {
-    return ((statsData[language].code / totalCode) * 100).toFixed(1);
-  };
-
-  const getColorForLanguage = (index: number) => {
-    const colors = [
-      "#FF6384",
-      "#36A2EB",
-      "#FFCE56",
-      "#4BC0C0",
-      "#9966FF",
-      "#FF9F40",
-      "#FF6384",
-      "#C9CBCF",
-    ];
-    return colors[index % colors.length];
-  };
+  const { owner, repo } = splitGitHubUrl(repoDetails.url);
 
   return (
     <Card className="w-full max-w-4xl mx-auto">
@@ -51,7 +40,14 @@ export default function GithubRepoStats({ repoDetails, statsData }: Props) {
             rel="noopener noreferrer"
             className="hover:underline"
           >
-            {repoDetails.name}
+            <span className="flex items-center">
+              <img
+                src={`https://github.com/${owner}.png?size=40`}
+                alt={`${owner} avatar`}
+                className="w-6 h-6 mr-2 rounded-full"
+              />
+              {owner} / {repo}
+            </span>
           </a>
         </CardTitle>
         <CardDescription>{repoDetails.description}</CardDescription>
@@ -96,29 +92,7 @@ export default function GithubRepoStats({ repoDetails, statsData }: Props) {
           </div>
 
           <div>
-            <h3 className="text-lg font-semibold mb-4">Language Details</h3>
-            <div className="space-y-3">
-              {languages.map((lang, index) => (
-                <div key={lang} className="flex items-center justify-between">
-                  <div className="flex items-center w-1/3">
-                    <div
-                      className={`w-3 h-3 rounded-full mr-2`}
-                      style={{ backgroundColor: getColorForLanguage(index) }}
-                    />
-                    <span className="font-medium">{lang}</span>
-                  </div>
-                  <span className="w-1/5 text-right">
-                    {getLanguagePercentage(lang)}%
-                  </span>
-                  <span className="w-1/5 text-right">
-                    {statsData[lang].nFiles} files
-                  </span>
-                  <span className="w-1/5 text-right">
-                    {statsData[lang].code} lines
-                  </span>
-                </div>
-              ))}
-            </div>
+            <LanguageDetailsTable statsData={statsData} />
             <div className="mt-6">
               <CodeStatsGraph codeStats={statsData} />
             </div>
